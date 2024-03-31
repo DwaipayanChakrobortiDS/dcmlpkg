@@ -212,3 +212,131 @@ def dc_nullFind(df):
     null_categorical=pd.isnull(df).sum().sort_values(ascending=False)
     # null_categorical=null_categorical[null_categorical>=0]
     return(null_numerical,null_categorical)
+
+
+
+
+def dc_UVA_numeric(data, var_group):
+    '''
+    Perform Univariate Analysis on Numeric Variables.
+
+    Parameters:
+    - data (DataFrame): The dataset containing the variables for analysis.
+    - var_group (list): A list of variable names (strings) to analyze.
+
+    Returns:
+    - None
+
+    This function takes a group of numeric variables (INTEGER and FLOAT) and plots the Kernel Density Estimation (KDE) along with various descriptive statistics.
+
+    It iterates over each variable in the provided list, calculates descriptive statistics including minimum, maximum, range, mean, median, standard deviation, skewness, and kurtosis. Then, it plots the KDE plot along with markers for minimum, maximum, mean, and median.
+
+    If a variable is not found in the dataset, it prints a warning message.
+
+    Example:
+    dc_UVA_numeric(data=my_data, var_group=['age', 'income'])
+    '''
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    if not var_group:
+        print("No variables provided for analysis.")
+        return
+    
+    plt.figure(figsize=(7 * len(var_group), 3), dpi=100)
+    
+    for j, i in enumerate(var_group):
+        if i not in data.columns:
+            print(f"Variable '{i}' not found in the dataset.")
+            continue
+        
+        # calculating descriptives of variables
+        mini = data[i].min()
+        maxi = data[i].max()
+        ran = maxi - mini
+        mean = data[i].mean()
+        median = data[i].median()
+        st_dev = data[i].std()
+        skew = data[i].skew()
+        kurt = data[i].kurtosis()
+
+        # calculating the point of standard deviation 
+        points = mean - st_dev, mean + st_dev
+
+        # plotting the variables with every information
+        plt.subplot(1, len(var_group), j + 1)
+        sns.kdeplot(data[i], shade=True, color='LightGreen')
+        sns.lineplot(points, [0, 0], color='black', label="std_dev")
+        sns.scatterplot([mini, maxi], [0, 0], color='orange', label="min/max")
+        sns.scatterplot([mean], [0], color='red', label="mean")
+        sns.scatterplot([median], [0], color='blue', label="median")
+        plt.xlabel('{}'.format(i), fontsize=20)
+        plt.ylabel('density')
+        plt.title("std_dev = {}; kurtosis = {};\nskew = {}; range = {}\nmean = {}; median = {}".format(
+            (round(points[0], 2), round(points[1], 2)),
+            round(kurt, 2),
+            round(skew, 2),
+            (round(mini, 2), round(maxi, 2), round(ran, 2)),
+            round(mean, 2),
+            round(median, 2)))
+    
+    plt.tight_layout()
+    plt.show()
+
+
+  
+
+
+
+def dc_UVA_category(data, var_group):
+    '''
+    Perform Univariate Analysis on Categorical Variables.
+
+    Parameters:
+    - data (DataFrame): The dataset containing the variables for analysis.
+    - var_group (list): A list of variable names (strings) to analyze.
+
+    Returns:
+    - None
+
+    This function takes a group of categorical variables and plots the value counts along with a bar plot.
+
+    It iterates over each variable in the provided list, calculates the normalized value counts and the number of unique categories. Then, it plots a count plot with each category's value counts annotated.
+
+    If a variable is not found in the dataset, it prints a warning message.
+
+    Example:
+    dc_UVA_category(data=my_data, var_group=['gender', 'education'])
+    '''
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    if not var_group:
+        print("No variables provided for analysis.")
+        return
+    
+    # setting figure size
+    size = len(var_group)
+    plt.figure(figsize=(8 * size, 7), dpi=100)
+    
+    # for every variable
+    for j, i in enumerate(var_group):
+        if i not in data.columns:
+            print(f"Variable '{i}' not found in the dataset.")
+            continue
+        
+        norm_count = data[i].value_counts(normalize=True)
+        n_uni = data[i].nunique()
+
+        # plotting the variable with every information
+        plt.subplot(1, size, j + 1)
+        graph2 = sns.countplot(y=i, data=data, order=data[i].value_counts().index, palette="Set2")
+        for p in graph2.patches:
+            graph2.annotate(s='{:.0f}'.format(p.get_width()), xy=(p.get_width() + 0.1, p.get_y() + 0.7))
+        plt.xlabel('fraction/percent', fontsize=20)
+        plt.ylabel('{}'.format(i), fontsize=20)
+        plt.title('n_uniques = {}\n value counts \n {}'.format(n_uni, norm_count), fontsize=12)
+    
+    plt.tight_layout()
+    plt.show()
+
