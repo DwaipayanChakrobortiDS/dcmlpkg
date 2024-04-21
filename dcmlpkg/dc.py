@@ -340,3 +340,99 @@ def dc_UVA_category(data, var_group):
     plt.tight_layout()
     plt.show()
 
+
+def dc_detect_outliers_iqr_summary(dataframe, features):
+    outliers_summary = {}
+
+    for feature in features:
+        data = dataframe[feature]
+        Q1 = data.quantile(0.25)
+        Q3 = data.quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        outliers = data[(data < lower_bound) | (data > upper_bound)]
+        outliers_summary[feature] = len(outliers)
+
+    return outliers_summary
+
+
+# Define a function to detect outliers using the Gaussian model
+def dc_detect_outliers_gaussian(dataframe, features, threshold=3):
+    outliers_summary = {}
+
+    for feature in features:
+        data = dataframe[feature]
+        mean = data.mean()
+        median=data.median()
+        std_dev = data.std()
+        outliers = data[(data < mean - threshold * std_dev) | (data > mean + threshold * std_dev)]
+        outliers_summary[feature] = len(outliers)
+
+        # Visualization
+        plt.figure(figsize=(12, 6))
+        sns.histplot(data, color="lightblue", kde=True),
+        plt.axvline(mean, color='r', linestyle='-', label=f'Mean: {mean:.2f}')
+        plt.axvline(median, color='b', linestyle='-', label=f'Median: {median:.2f}')
+        plt.axvline(mean - threshold * std_dev, color='y', linestyle='--', label=f'—{threshold} std devs')
+        plt.axvline(mean + threshold * std_dev, color='g', linestyle='--', label=f'+{threshold} std devs')
+
+        # Annotate upper 3rd std dev value
+        annotate_text = f'{mean + threshold * std_dev:.2f}'
+        plt.annotate(annotate_text, xy=(mean + threshold * std_dev, 0),
+                     xytext=(mean + (threshold + 1.45) * std_dev, 50),
+                     arrowprops=dict(facecolor='black', arrowstyle='wedge,tail_width=0.7'),
+                     fontsize=12, ha='center')
+
+        plt.title(f'Distribution of {feature_names_full[feature]} with Outliers', fontsize=16)
+        plt.xlabel(feature_names_full[feature], fontsize=14)
+        plt.ylabel('Frequency', fontsize=14)
+        plt.legend()
+        plt.show()
+
+    return outliers_summary
+
+# Define a function to tabulate outliers into a DataFrame
+def dc_create_outliers_dataframes_gaussian(dataframe, features, threshold=3, num_rows=None):
+    outliers_dataframes = {}
+
+    for feature in features:
+        data = dataframe[feature]
+        mean = data.mean()
+        std_dev = data.std()
+        outliers = data[(data < mean - threshold * std_dev) | (data > mean + threshold * std_dev)]
+
+        # Create a new DataFrame for outliers of the current feature
+        outliers_df = dataframe.loc[outliers.index, [feature]].copy()
+        outliers_df.rename(columns={feature: 'Outlier Value'}, inplace=True)
+        outliers_df['Feature'] = feature
+        outliers_df.reset_index(inplace=True)
+
+        # Display specified number of rows (default: full dataframe)
+        outliers_df = outliers_df.head(num_rows) if num_rows is not None else outliers_df
+
+        outliers_dataframes[feature] = outliers_df
+
+    return outliers_dataframes
+
+def DC_cross_entropy(p, q):
+    """
+    Calculates the cross entropy between two probability distributions p and q.
+
+    Args:
+    p (numpy.ndarray): A 1D numpy array representing the true probability distribution.
+    q (numpy.ndarray): A 1D numpy array representing the predicted probability distribution.
+
+    Returns:
+    float: The cross entropy between the two input probability distributions.
+
+    Raises:
+    ValueError: If the lengths of p and q do not match or if either array contains negative values or values greater than 1.
+
+    Note:
+    This function assumes both p and q are valid probability distributions, meaning they should be non-negative and sum up to 1.
+    """
+    import numpy as np   
+    if len(p) != len(q) or np.any(p < 0) or np.any(p > 1) or np.any(q < 0) or np.any(q > 1):
+        raise ValueError("Both p and q must have the same length and contain only non-negative values less than or equal to 1.")     
+    return -np.sum([p[i] * np.log(q[i]) for i in range(len(p))])

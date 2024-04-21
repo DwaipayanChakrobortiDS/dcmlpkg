@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dcmlpkg"
-version = "0.1.1"
+version = "0.1.2b"
 description = "My packages to use for Data Science Projects"
 authors = ["dcgkpindiadatascience <dcgkpindiadatascience@gmail.com>"]
 readme = "README.md"
